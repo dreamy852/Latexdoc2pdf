@@ -1,4 +1,4 @@
-# Python
+# Python (舊文件，現已不需要)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -23,9 +23,18 @@ wheels/
 .installed.cfg
 *.egg
 
-# Flask
+# Flask (舊文件，現已不需要)
 instance/
 .webassets-cache
+app.py
+requirements.txt
+Dockerfile
+render.yaml
+Procfile
+runtime.txt
+apt-packages.txt
+DEPLOY.md
+templates/
 
 # IDE
 .vscode/

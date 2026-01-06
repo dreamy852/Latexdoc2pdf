@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX 轉 PDF</title>
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for HTML to canvas conversion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .example-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .example-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .example-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .example-button:hover {
+            background: #5568d3;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error {
+            display: none;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .success {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .preview-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .preview-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        #preview {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+        }
+
+        #preview h1, #preview h2, #preview h3 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        #preview p {
+            margin-bottom: 1em;
+        }
+
+        #preview ul, #preview ol {
+            margin-left: 2em;
+            margin-bottom: 1em;
+        }
+
+        /* Hidden PDF rendering container */
+        #pdf-render {
+            position: absolute;
+            left: -9999px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            background: white;
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.6;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 LaTeX 轉 PDF</h1>
+        <p class="subtitle">輸入 LaTeX 文檔，自動生成 PDF 文件（純瀏覽器端，無需服務器）</p>
+
+        <div class="example-section">
+            <h3>快速範例</h3>
+            <p>點擊下方按鈕載入範例 LaTeX 文檔：</p>
+            <button class="example-button" onclick="loadExample('basic')">基本文檔</button>
+            <button class="example-button" onclick="loadExample('math')">數學公式</button>
+            <button class="example-button" onclick="loadExample('article')">完整文章</button>
+        </div>
+
+        <form id="latexForm">
+            <div class="form-group">
+                <label for="latex_content">LaTeX 內容：</label>
+                <textarea id="latex_content" name="latex_content" required></textarea>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn-primary" id="generateBtn" onclick="generatePDF()">生成 PDF</button>
+                <button type="button" class="btn-secondary" onclick="clearContent()">清除內容</button>
+            </div>
+        </form>
+
+        <div class="preview-section">
+            <h3>預覽</h3>
+            <div id="preview"></div>
+        </div>
+
+        <div class="loading" id="loading">正在生成 PDF，請稍候...</div>
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+
+        <div class="note">
+            <strong>注意：</strong>這是純瀏覽器端的 LaTeX 轉換工具。支援基本的 LaTeX 語法和數學公式。
+            對於複雜的文檔，建議使用完整的 LaTeX 發行版。
+        </div>
+    </div>
+
+    <!-- Hidden container for PDF rendering -->
+    <div id="pdf-render"></div>
+
+    <script>
+        const examples = {
+            basic: `\\documentclass{article}
+\\begin{document}
+\\title{我的第一個 LaTeX 文檔}
+\\author{您的名字}
+\\date{\\today}
+\\maketitle
+
+\\section{簡介}
+這是我的第一個 LaTeX 文檔！
+
+\\section{內容}
+LaTeX 是一個強大的文檔準備系統。
+\\end{document}`,
+
+            math: `\\documentclass{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage{amsmath}
+
+\\begin{document}
+\\title{數學公式範例}
+\\maketitle
+
+\\section{行內公式}
+這是行內公式：$E = mc^2$
+
+\\section{區塊公式}
+這是區塊公式：
+\\[
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+\\]
+
+\\section{多行公式}
+\\begin{align}
+f(x) &= x^2 + 2x + 1 \\\\
+     &= (x + 1)^2
+\\end{align}
+\\end{document}`,
+
+            article: `\\documentclass[12pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage{amsmath,amsfonts,amssymb}
+
+\\title{LaTeX 文檔範例}
+\\author{作者姓名}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\section{引言}
+這是一個完整的 LaTeX 文檔範例，展示了各種功能和格式。
+
+\\subsection{子節}
+這是子節的內容。
+
+\\section{列表}
+\\begin{itemize}
+    \\item 項目一
+    \\item 項目二
+    \\item 項目三
+\\end{itemize}
+
+\\section{編號列表}
+\\begin{enumerate}
+    \\item 第一項
+    \\item 第二項
+    \\item 第三項
+\\end{enumerate}
+
+\\section{結論}
+這是一個簡單的結論段落。
+\\end{document}`
+        };
+
+        function loadExample(type) {
+            document.getElementById('latex_content').value = examples[type] || '';
+            updatePreview();
+        }
+
+        function clearContent() {
+            document.getElementById('latex_content').value = '';
+            document.getElementById('preview').innerHTML = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        // Simple LaTeX to HTML converter
+        function latexToHTML(latex) {
+            let html = latex;
+            
+            // Remove documentclass and usepackage (not needed for rendering)
+            html = html.replace(/\\documentclass\{[^}]+\}/g, '');
+            html = html.replace(/\\usepackage\{[^}]+\}/g, '');
+            html = html.replace(/\\begin\{document\}/g, '');
+            html = html.replace(/\\end\{document\}/g, '');
+            
+            // Title
+            html = html.replace(/\\title\{([^}]+)\}/g, '<h1>$1</h1>');
+            html = html.replace(/\\author\{([^}]+)\}/g, '<p><strong>作者：</strong>$1</p>');
+            html = html.replace(/\\date\{([^}]+)\}/g, '<p><strong>日期：</strong>$1</p>');
+            html = html.replace(/\\maketitle/g, '');
+            html = html.replace(/\\today/g, new Date().toLocaleDateString('zh-TW'));
+            
+            // Sections
+            html = html.replace(/\\section\{([^}]+)\}/g, '<h2>$1</h2>');
+            html = html.replace(/\\subsection\{([^}]+)\}/g, '<h3>$1</h3>');
+            html = html.replace(/\\subsubsection\{([^}]+)\}/g, '<h4>$1</h4>');
+            
+            // Lists
+            html = html.replace(/\\begin\{itemize\}/g, '<ul>');
+            html = html.replace(/\\end\{itemize\}/g, '</ul>');
+            html = html.replace(/\\begin\{enumerate\}/g, '<ol>');
+            html = html.replace(/\\end\{enumerate\}/g, '</ol>');
+            html = html.replace(/\\item\s+/g, '<li>');
+            html = html.replace(/(<\/li>)\s*(<li>)/g, '$1$2');
+            
+            // Line breaks
+            html = html.replace(/\\\\/g, '<br>');
+            html = html.replace(/\\newpage/g, '<div style="page-break-after: always;"></div>');
+            
+            // Bold and italic
+            html = html.replace(/\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
+            html = html.replace(/\\textit\{([^}]+)\}/g, '<em>$1</em>');
+            
+            // Paragraphs
+            html = html.split('\n\n').map(p => {
+                p = p.trim();
+                if (p && !p.match(/^<[hul]/) && !p.match(/<\/li>$/)) {
+                    return '<p>' + p + '</p>';
+                }
+                return p;
+            }).join('\n');
+            
+            // Clean up
+            html = html.replace(/\n/g, ' ');
+            html = html.replace(/<p>\s*<\/p>/g, '');
+            html = html.replace(/<p>(<[hul])/g, '$1');
+            html = html.replace(/(<\/[hul]>)<\/p>/g, '$1');
+            html = html.replace(/<li>(.*?)<\/li>/g, function(match, content) {
+                // Ensure each item is properly closed
+                if (!content.match(/<\/li>/)) {
+                    return '<li>' + content.replace(/<li>/g, '').replace(/<\/li>/g, '') + '</li>';
+                }
+                return match;
+            });
+            
+            return html;
+        }
+
+        function updatePreview() {
+            const latex = document.getElementById('latex_content').value;
+            const preview = document.getElementById('preview');
+            
+            if (!latex.trim()) {
+                preview.innerHTML = '';
+                return;
+            }
+            
+            try {
+                let html = latexToHTML(latex);
+                
+                // Render math with KaTeX
+                preview.innerHTML = html;
+                renderMathInElement(preview, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false}
+                    ]
+                });
+            } catch (e) {
+                preview.innerHTML = '<p style="color: red;">預覽錯誤：' + e.message + '</p>';
+            }
+        }
+
+        async function generatePDF() {
+            const latex = document.getElementById('latex_content').value.trim();
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (!latex) {
+                error.style.display = 'block';
+                error.textContent = '請輸入 LaTeX 內容';
+                return;
+            }
+            
+            // Hide previous messages
+            error.style.display = 'none';
+            success.style.display = 'none';
+            loading.style.display = 'block';
+            generateBtn.disabled = true;
+            
+            try {
+                // Convert LaTeX to HTML
+                let html = latexToHTML(latex);
+                
+                // Create render container
+                const renderDiv = document.getElementById('pdf-render');
+                renderDiv.innerHTML = html;
+                
+                // Render math in the render div
+                renderMathInElement(renderDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false}
+                    ]
+                });
+                
+                // Wait a bit for math rendering
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Convert to canvas then PDF
+                const canvas = await html2canvas(renderDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                // Download PDF
+                const fileName = 'document_' + new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_') + '.pdf';
+                pdf.save(fileName);
+                
+                loading.style.display = 'none';
+                success.style.display = 'block';
+                success.textContent = 'PDF 生成成功！下載已開始。';
+                
+            } catch (e) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = '生成 PDF 時發生錯誤：' + e.message;
+                console.error(e);
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+
+        // Update preview on input
+        document.getElementById('latex_content').addEventListener('input', function() {
+            clearTimeout(this.updateTimeout);
+            this.updateTimeout = setTimeout(updatePreview, 300);
+        });
+    </script>
+</body>
+</html>
+
