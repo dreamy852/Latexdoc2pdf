@@ -629,31 +629,67 @@ Q3C
                     latexCode = generateTemplate2(data);
                 }
 
-                // For now, we'll create a simplified HTML version for PDF
-                // Note: Full LaTeX rendering in browser is complex, so we create a formatted HTML version
+                // Create HTML version for PDF rendering with answer lines
                 const renderDiv = document.getElementById('pdf-render');
                 
-                // Create HTML version for rendering
-                let html = `
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h1>${data.title || 'Worksheet Title'}</h1>
-                        <h2>${data.subject || 'Subject/Course Name'}</h2>
-                        <hr style="margin: 20px 0;">
-                        <p style="text-align: left;"><strong>Name:</strong> _________________ &nbsp;&nbsp; <strong>Class:</strong> _________________</p>
-                    </div>
+                // Clear and setup render div
+                renderDiv.innerHTML = '';
+                renderDiv.style.cssText = 'position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6;';
+                
+                // Helper function to create answer lines
+                function createAnswerLines() {
+                    let linesHtml = '<div style="margin-top: 15px; margin-bottom: 20px; width: 100%;">';
+                    for (let i = 0; i < 5; i++) {
+                        linesHtml += `<hr style="border: none; border-bottom: 1.5px solid #000; margin: 10px 0; padding: 0; width: 100%; height: 0;">`;
+                    }
+                    linesHtml += '</div>';
+                    return linesHtml;
+                }
+                
+                // Create first page with header
+                let pageHtml = `
+                    <div style="page-break-after: always; min-height: 257mm; display: flex; flex-direction: column;">
+                        <div style="text-align: center; margin-bottom: 30px; flex-shrink: 0;">
+                            <h1 style="font-size: 24pt; margin-bottom: 10px;">${data.title || 'Worksheet Title'}</h1>
+                            <h2 style="font-size: 18pt; margin-bottom: 20px;">${data.subject || 'Subject/Course Name'}</h2>
+                            <hr style="margin: 20px 0; border: 1px solid #000;">
+                            <p style="text-align: left; margin-top: 20px;"><strong>Name:</strong> _________________ &nbsp;&nbsp; <strong>Class:</strong> _________________</p>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
                 `;
-
-                data.questions.forEach((q, idx) => {
-                    html += `
-                        <div style="margin-bottom: 30px;">
-                            <p><strong>${idx + 1}.</strong></p>
-                            <p><strong>English:</strong> ${q.english}</p>
-                            <p style="margin-top: 10px;"><strong>中文:</strong> ${q.chinese}</p>
+                
+                // Process questions - 2 per page
+                for (let i = 0; i < data.questions.length; i++) {
+                    const q = data.questions[i];
+                    const questionIndex = i + 1;
+                    
+                    // Start new page every 2 questions (except first page)
+                    if (i > 0 && i % 2 === 0) {
+                        pageHtml += '</div></div>'; // Close previous page
+                        pageHtml += `<div style="page-break-after: always; min-height: 257mm; display: flex; flex-direction: column; padding-top: 0;">
+                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">`;
+                    }
+                    
+                    // Add question with answer space
+                    // Use flex: 1 to evenly distribute space between questions on the same page
+                    pageHtml += `
+                        <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; margin-bottom: ${i % 2 === 0 && i < data.questions.length - 1 ? '20px' : '0'}; min-height: 0;">
+                            <div style="flex-shrink: 0;">
+                                <p style="margin-bottom: 8px; font-weight: bold;"><strong>${q.num || questionIndex}.</strong></p>
+                                <p style="margin-bottom: 5px;"><strong>English:</strong> ${q.english}</p>
+                                <p style="margin-top: 8px; margin-bottom: 15px;"><strong>中文:</strong> ${q.chinese}</p>
+                            </div>
+                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 80px;">
+                                ${createAnswerLines()}
+                            </div>
                         </div>
                     `;
-                });
-
-                renderDiv.innerHTML = html;
+                }
+                
+                // Close last page
+                pageHtml += '</div></div>';
+                
+                renderDiv.innerHTML = pageHtml;
 
                 // Render math with KaTeX
                 renderMathInElement(renderDiv, {
