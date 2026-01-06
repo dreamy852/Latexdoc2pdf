@@ -428,6 +428,8 @@ Q3C
                 // Create HTML version for PDF rendering
                 const renderDiv = document.getElementById('pdf-render');
                 renderDiv.innerHTML = '';
+                // Clear any existing inline styles and apply new ones
+                renderDiv.removeAttribute('style');
                 renderDiv.style.cssText = 'position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6;';
                 
                 // Create first page with header
