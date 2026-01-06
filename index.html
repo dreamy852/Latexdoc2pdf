@@ -180,6 +180,59 @@
             font-size: 0.9em;
             color: #0d47a1;
         }
+
+        .latex-output {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+        }
+
+        .latex-output.show {
+            display: block;
+        }
+
+        .latex-output h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .latex-code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .latex-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-small:hover {
+            background: #5568d3;
+        }
     </style>
 </head>
 <body>
@@ -218,6 +271,16 @@ Q3C
         <div class="error" id="error"></div>
         <div class="success" id="success"></div>
 
+        <div class="latex-output" id="latexOutput">
+            <h4>生成的 LaTeX 代碼：</h4>
+            <textarea id="latexCode" class="latex-code" readonly></textarea>
+            <div class="latex-actions">
+                <button type="button" class="btn-small" onclick="copyLaTeX()">複製 LaTeX 代碼</button>
+                <button type="button" class="btn-small" onclick="downloadLaTeX()">下載 .tex 文件</button>
+                <button type="button" class="btn-small" onclick="hideLaTeX()">隱藏</button>
+            </div>
+        </div>
+
         <div class="note">
             <strong>注意：</strong>輸入格式必須嚴格遵循：TITLE/SUBJECT 後跟內容，然後是 Q1E/Q1C/Q2E/Q2C... 的格式。
             數學公式可以使用 LaTeX 語法（例如：$x^2$ 或 \(x^2\)）。
@@ -232,6 +295,31 @@ Q3C
             document.getElementById('question_input').value = '';
             document.getElementById('error').style.display = 'none';
             document.getElementById('success').style.display = 'none';
+            document.getElementById('latexOutput').classList.remove('show');
+        }
+
+        function copyLaTeX() {
+            const latexCode = document.getElementById('latexCode');
+            latexCode.select();
+            document.execCommand('copy');
+            alert('LaTeX 代碼已複製到剪貼板！');
+        }
+
+        function downloadLaTeX() {
+            const latexCode = document.getElementById('latexCode').value;
+            const blob = new Blob([latexCode], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'worksheet_' + new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_') + '.tex';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function hideLaTeX() {
+            document.getElementById('latexOutput').classList.remove('show');
         }
 
         function parseInput(input) {
@@ -424,6 +512,11 @@ Q3C
 
                 // Generate LaTeX code
                 const latexCode = generateLaTeX(data);
+
+                // Display LaTeX code in the output area
+                const latexCodeElement = document.getElementById('latexCode');
+                latexCodeElement.value = latexCode;
+                document.getElementById('latexOutput').classList.add('show');
 
                 // Create HTML version for PDF rendering
                 const renderDiv = document.getElementById('pdf-render');
