@@ -434,11 +434,22 @@ Q3C
     \\textbf{#1.} & 
 }{%
     \\end{tabular}
-    \\vspace{0.5cm}
+    \\vspace{0.3cm}
 }
 
 \\newcommand{\\engquestion}[1]{\\textbf{English:} #1\\\\[0.2cm]}
 \\newcommand{\\chquestion}[1]{\\textbf{中文:} #1}
+\\newcommand{\\answerspace}{%
+    \\vfill
+    \\begin{center}
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}
+    \\end{center}
+    \\vfill
+}
 
 \\begin{document}
 
@@ -480,6 +491,7 @@ Q3C
     \\engquestion{${escapeLatex(q.english)}}
     \\chquestion{${escapeLatex(q.chinese)}}
 \\end{worksheetquestion}
+\\answerspace
 
 `;
             }
@@ -522,7 +534,19 @@ Q3C
     \\textbf{English:} #1\\\\[0.2cm]
     & \\textbf{中文:} #2
     \\end{tabular}
-    \\vspace{1cm}
+    \\vspace{0.3cm}
+}
+
+\\newcommand{\\answerspace}{%
+    \\vfill
+    \\begin{center}
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}\\\\[0.3cm]
+        \\rule{\\linewidth}{0.4pt}
+    \\end{center}
+    \\vfill
 }
 
 \\begin{document}
@@ -559,7 +583,10 @@ Q3C
                     latex += '\\newpage\n\n';
                 }
 
-                latex += `\\question{${escapeLatex(q.english)}}{${escapeLatex(q.chinese)}}\n\n`;
+                latex += `\\question{${escapeLatex(q.english)}}{${escapeLatex(q.chinese)}}
+\\answerspace
+
+`;
             }
 
             latex += '\\end{document}';
