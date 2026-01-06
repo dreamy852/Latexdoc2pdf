@@ -472,16 +472,20 @@ Q3C
                 
                 // Start new page for Q3, Q5, Q7, etc. (every 2 questions after first page)
                 if (questionNum >= 3 && (questionNum - 1) % 2 === 0) {
-                    latex += '\\newpage\n\n';
+                    latex += '\\newpage\n';
+                    // Add space at the top of new page to prevent question stuck at bottom
+                    latex += '\\vspace{2cm}\n\n';
                 }
 
-                // Add spacing before questions
-                if (questionNum % 2 === 0) {
-                    // Even questions (Q2, Q4, Q6...): add vspace 20cm
-                    latex += '\\vspace{20cm}\n\n';
-                } else if (questionNum > 1) {
-                    // Odd questions except Q1 (Q3, Q5, Q7...): add 6cm line break
-                    latex += '\\\\[6cm]\n\n';
+                // Add spacing before questions (except Q1)
+                if (questionNum > 1) {
+                    if (questionNum % 2 === 0) {
+                        // Even questions (Q2, Q4, Q6...): add vspace before them
+                        latex += '\\vspace{4cm}\n\n';
+                    } else {
+                        // Odd questions (Q3, Q5, Q7...): add vspace before them
+                        latex += '\\vspace{2cm}\n\n';
+                    }
                 }
 
                 latex += `% Question ${questionNum}
@@ -491,6 +495,11 @@ Q3C
 \\end{worksheetquestion}
 
 `;
+                
+                // Add spacing after each question (except the last one)
+                if (i < data.questions.length - 1) {
+                    latex += '\\vspace{2cm}\n\n';
+                }
             }
 
             latex += '\\end{document}';
