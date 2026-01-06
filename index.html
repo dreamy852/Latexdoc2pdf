@@ -480,18 +480,18 @@ Q3C
             // Generate questions
             for (let i = 0; i < data.questions.length; i++) {
                 const q = data.questions[i];
+                const questionNum = q.num || (i + 1);
                 
-                // New page every 2 questions (except first page)
-                if (i > 0 && i % 2 === 0) {
-                    latex += '\\newpage\n\n';
+                // For odd-numbered questions except Q1 (Q3, Q5, Q7, etc.), add page break and spacing
+                if (questionNum > 1 && questionNum % 2 === 1) {
+                    latex += '\\vspace*{\\fill}\n\\newpage\n\\vspace*{0.5cm}\n\n';
                 }
 
-                latex += `% Question ${q.num}
-\\begin{worksheetquestion}{${q.num}}
+                latex += `% Question ${questionNum}
+\\begin{worksheetquestion}{${questionNum}}
     \\engquestion{${escapeLatex(q.english)}}
     \\chquestion{${escapeLatex(q.chinese)}}
 \\end{worksheetquestion}
-\\answerspace
 
 `;
             }
@@ -577,14 +577,14 @@ Q3C
             // Generate questions
             for (let i = 0; i < data.questions.length; i++) {
                 const q = data.questions[i];
+                const questionNum = q.num || (i + 1);
                 
-                // New page every 2 questions (except first page)
-                if (i > 0 && i % 2 === 0) {
-                    latex += '\\newpage\n\n';
+                // For odd-numbered questions except Q1 (Q3, Q5, Q7, etc.), add page break and spacing
+                if (questionNum > 1 && questionNum % 2 === 1) {
+                    latex += '\\vspace*{\\fill}\n\\newpage\n\\vspace*{0.5cm}\n\n';
                 }
 
                 latex += `\\question{${escapeLatex(q.english)}}{${escapeLatex(q.chinese)}}
-\\answerspace
 
 `;
             }
@@ -629,22 +629,12 @@ Q3C
                     latexCode = generateTemplate2(data);
                 }
 
-                // Create HTML version for PDF rendering with answer lines
+                // Create HTML version for PDF rendering
                 const renderDiv = document.getElementById('pdf-render');
                 
                 // Clear and setup render div
                 renderDiv.innerHTML = '';
                 renderDiv.style.cssText = 'position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6;';
-                
-                // Helper function to create answer lines
-                function createAnswerLines() {
-                    let linesHtml = '<div style="margin-top: 15px; margin-bottom: 20px; width: 100%;">';
-                    for (let i = 0; i < 5; i++) {
-                        linesHtml += `<hr style="border: none; border-bottom: 1.5px solid #000; margin: 10px 0; padding: 0; width: 100%; height: 0;">`;
-                    }
-                    linesHtml += '</div>';
-                    return linesHtml;
-                }
                 
                 // Create first page with header
                 let pageHtml = `
@@ -662,25 +652,25 @@ Q3C
                 for (let i = 0; i < data.questions.length; i++) {
                     const q = data.questions[i];
                     const questionIndex = i + 1;
+                    const questionNum = q.num || questionIndex;
                     
-                    // Start new page every 2 questions (except first page)
-                    if (i > 0 && i % 2 === 0) {
+                    // For odd-numbered questions except Q1 (Q3, Q5, Q7, etc.), add page break before
+                    // Q1 is index 0, Q3 is index 2, Q5 is index 4, etc. (i=0,2,4,6...)
+                    // So we check: questionNum > 1 && questionNum % 2 === 1
+                    if (questionNum > 1 && questionNum % 2 === 1) {
+                        // Close previous page and start new page
                         pageHtml += '</div></div>'; // Close previous page
-                        pageHtml += `<div style="page-break-after: always; min-height: 257mm; display: flex; flex-direction: column; padding-top: 0;">
+                        pageHtml += `<div style="page-break-before: always; page-break-after: always; min-height: 257mm; display: flex; flex-direction: column;">
                             <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">`;
                     }
                     
-                    // Add question with answer space
-                    // Use flex: 1 to evenly distribute space between questions on the same page
+                    // Add question (no answer lines)
                     pageHtml += `
                         <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; margin-bottom: ${i % 2 === 0 && i < data.questions.length - 1 ? '20px' : '0'}; min-height: 0;">
-                            <div style="flex-shrink: 0;">
-                                <p style="margin-bottom: 8px; font-weight: bold;"><strong>${q.num || questionIndex}.</strong></p>
+                            <div>
+                                <p style="margin-bottom: 8px; font-weight: bold;"><strong>${questionNum}.</strong></p>
                                 <p style="margin-bottom: 5px;"><strong>English:</strong> ${q.english}</p>
                                 <p style="margin-top: 8px; margin-bottom: 15px;"><strong>中文:</strong> ${q.chinese}</p>
-                            </div>
-                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 80px;">
-                                ${createAnswerLines()}
                             </div>
                         </div>
                     `;
