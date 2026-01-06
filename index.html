@@ -260,6 +260,20 @@
             }
 
             previewDiv.innerHTML = input;
+            
+            // Render math with KaTeX in preview
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(previewDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+            
             previewSection.style.display = 'block';
         }
 
