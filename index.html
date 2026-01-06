@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LaTeX Worksheet Generator</title>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for HTML to canvas conversion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -109,6 +113,53 @@
             box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
         }
 
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error {
+            display: none;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .success {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        #pdf-render {
+            position: absolute;
+            left: -9999px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            background: white;
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.6;
+        }
+
         .format-example {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -159,8 +210,13 @@ Q3C
         </div>
 
         <div class="button-group">
+            <button type="button" class="btn-primary" id="generateBtn" onclick="generatePDF()">生成 PDF</button>
             <button type="button" class="btn-secondary" onclick="clearContent()">清除內容</button>
         </div>
+
+        <div class="loading" id="loading">正在生成 PDF，請稍候...</div>
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
 
         <div class="note">
             <strong>注意：</strong>輸入格式必須嚴格遵循：TITLE/SUBJECT 後跟內容，然後是 Q1E/Q1C/Q2E/Q2C... 的格式。
@@ -168,9 +224,295 @@ Q3C
         </div>
     </div>
 
+    <!-- Hidden container for PDF rendering -->
+    <div id="pdf-render"></div>
+
     <script>
         function clearContent() {
             document.getElementById('question_input').value = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        function parseInput(input) {
+            const lines = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const data = {
+                title: '',
+                subject: '',
+                questions: []
+            };
+            let currentKey = null;
+            let currentQuestion = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line === 'TITLE') {
+                    currentKey = 'TITLE';
+                } else if (line === 'SUBJECT') {
+                    currentKey = 'SUBJECT';
+                } else if (line.match(/^Q\d+E$/)) {
+                    const qNum = parseInt(line.substring(1, line.length - 1));
+                    currentQuestion = { num: qNum, english: '', chinese: '' };
+                    currentKey = 'ENGLISH';
+                } else if (line.match(/^Q\d+C$/)) {
+                    currentKey = 'CHINESE';
+                } else if (currentKey === 'TITLE') {
+                    data.title = line;
+                } else if (currentKey === 'SUBJECT') {
+                    data.subject = line;
+                } else if (currentKey === 'ENGLISH' && currentQuestion) {
+                    currentQuestion.english = (currentQuestion.english ? currentQuestion.english + '\n' : '') + line;
+                } else if (currentKey === 'CHINESE' && currentQuestion) {
+                    currentQuestion.chinese = (currentQuestion.chinese ? currentQuestion.chinese + '\n' : '') + line;
+                    // After a Chinese question, if the next line is not a new question key, push the current question
+                    const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
+                    if (!nextLine.match(/^(TITLE|SUBJECT|Q\d+[EC])$/)) {
+                        data.questions.push(currentQuestion);
+                        currentQuestion = null;
+                        currentKey = null;
+                    }
+                }
+            }
+
+            // Add the last question if it exists and hasn't been pushed
+            if (currentQuestion && currentQuestion.english && currentQuestion.chinese) {
+                data.questions.push(currentQuestion);
+            }
+
+            return data;
+        }
+
+        function escapeLatex(text) {
+            if (!text) return '';
+            // Split by math delimiters to avoid escaping inside math
+            const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\$[\s\S]*?\$|\\\(.*?\\\))/g);
+            return parts.map((part, i) => {
+                // If it's a math expression, don't escape it
+                if (part.match(/^\$.*\$$|^\\\[.*\\\]$|^\\\(.*\\\)$/)) {
+                    return part;
+                }
+                // Otherwise escape LaTeX special characters
+                return part
+                    .replace(/\\/g, '\\textbackslash{}')
+                    .replace(/\{/g, '\\{')
+                    .replace(/\}/g, '\\}')
+                    .replace(/#/g, '\\#')
+                    .replace(/%/g, '\\%')
+                    .replace(/&/g, '\\&')
+                    .replace(/\$/g, '\\$')
+                    .replace(/\^/g, '\\^{}')
+                    .replace(/_/g, '\\_');
+            }).join('');
+        }
+
+        function generateLaTeX(data) {
+            let latex = `\\documentclass[12pt]{article}
+\\usepackage[top=1.5cm, bottom=1.5cm, left=2cm, right=2cm]{geometry}
+\\usepackage{graphicx}
+\\usepackage{tabularx}
+\\usepackage{array}
+\\usepackage{multirow}
+\\usepackage{fancyhdr}
+\\usepackage{lastpage}
+\\usepackage{setspace}
+\\usepackage{xeCJK} % For Chinese support
+\\usepackage{enumitem}
+
+% Set up Chinese fonts (adjust paths as needed)
+\\setCJKmainfont{Noto Serif CJK TC} % Change to your Chinese font
+\\setCJKsansfont{Noto Sans CJK TC}
+\\setCJKmonofont{Noto Sans Mono CJK TC}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyfoot[C]{\\thepage/\\pageref{LastPage}}
+\\renewcommand{\\headrulewidth}{0pt}
+
+\\newlength{\\qnumwidth}
+\\setlength{\\qnumwidth}{2cm} % Width for question number column
+
+\\newenvironment{worksheetquestion}[1]{%
+    \\begin{tabular}{@{}p{\\qnumwidth}@{}p{\\linewidth-\\qnumwidth}@{}}
+    \\textbf{#1.} & 
+}{%
+    \\end{tabular}
+    \\vspace{0.5cm}
+}
+
+\\newcommand{\\engquestion}[1]{\\textbf{English:} #1\\\\[0.2cm]}
+\\newcommand{\\chquestion}[1]{\\textbf{中文:} #1}
+
+\\begin{document}
+
+% First Page
+\\begin{center}
+    % Header with logo and information
+    \\vspace*{0.5cm}
+    \\begin{tabular}{@{}p{3cm}@{}p{\\linewidth-3cm}@{}}
+    \\raisebox{-\\height}[0pt][0pt]{\\includegraphics[width=2.5cm]{example-image}} & 
+    \\begin{tabular}{l}
+    \\Large\\textbf{Name:} \\hrulefill \\\\
+    \\vspace{0.3cm}
+    \\Large\\textbf{Class:} \\hrulefill
+    \\end{tabular}
+    \\end{tabular}
+    
+    \\vspace{1cm}
+    {\\Huge \\textbf{${escapeLatex(data.title || 'Worksheet Title')}}}\\\\
+    \\vspace{0.5cm}
+    {\\Large \\textbf{${escapeLatex(data.subject || 'Subject/Course Name')}}}\\\\
+    \\vspace{1cm}
+    \\hrule
+    \\vspace{1cm}
+\\end{center}
+
+`;
+
+            // Generate questions - first page has Q1 and Q2, then every 2 questions per page
+            for (let i = 0; i < data.questions.length; i++) {
+                const q = data.questions[i];
+                const questionNum = q.num || (i + 1);
+                
+                // Start new page for Q3, Q5, Q7, etc. (every 2 questions after first page)
+                if (questionNum >= 3 && (questionNum - 1) % 2 === 0) {
+                    latex += '\\newpage\n\n';
+                }
+
+                latex += `% Question ${questionNum}
+\\begin{worksheetquestion}{${questionNum}}
+    \\engquestion{${escapeLatex(q.english)}}
+    \\chquestion{${escapeLatex(q.chinese)}}
+\\end{worksheetquestion}
+
+`;
+            }
+
+            latex += '\\end{document}';
+            return latex;
+        }
+
+        async function generatePDF() {
+            const input = document.getElementById('question_input').value.trim();
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const generateBtn = document.getElementById('generateBtn');
+
+            if (!input) {
+                error.style.display = 'block';
+                error.textContent = '請輸入練習題內容';
+                return;
+            }
+
+            // Hide previous messages
+            error.style.display = 'none';
+            success.style.display = 'none';
+            loading.style.display = 'block';
+            generateBtn.disabled = true;
+
+            try {
+                // Parse input
+                const data = parseInput(input);
+                
+                if (!data.questions || data.questions.length === 0) {
+                    throw new Error('未找到有效的問題。請確認輸入格式：TITLE/SUBJECT/Q1E/Q1C/Q2E/Q2C...');
+                }
+
+                // Generate LaTeX code
+                const latexCode = generateLaTeX(data);
+
+                // Create HTML version for PDF rendering
+                const renderDiv = document.getElementById('pdf-render');
+                renderDiv.innerHTML = '';
+                renderDiv.style.cssText = 'position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6;';
+                
+                // Create first page with header
+                let pageHtml = `
+                    <div style="page-break-after: always; min-height: 257mm; display: flex; flex-direction: column;">
+                        <div style="text-align: center; margin-bottom: 30px; flex-shrink: 0;">
+                            <div style="margin-bottom: 20px; text-align: left;">
+                                <p><strong>Name:</strong> _________________ &nbsp;&nbsp; <strong>Class:</strong> _________________</p>
+                            </div>
+                            <h1 style="font-size: 24pt; margin-bottom: 10px;">${data.title || 'Worksheet Title'}</h1>
+                            <h2 style="font-size: 18pt; margin-bottom: 20px;">${data.subject || 'Subject/Course Name'}</h2>
+                            <hr style="margin: 20px 0; border: 1px solid #000;">
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">
+                `;
+                
+                // Process questions - 2 per page (Q1-Q2 on first page, Q3-Q4 on second, etc.)
+                for (let i = 0; i < data.questions.length; i++) {
+                    const q = data.questions[i];
+                    const questionNum = q.num || (i + 1);
+                    
+                    // Start new page for Q3, Q5, Q7, etc. (every 2 questions after first page)
+                    if (questionNum >= 3 && (questionNum - 1) % 2 === 0) {
+                        pageHtml += '</div></div>'; // Close previous page
+                        pageHtml += `<div style="page-break-before: always; page-break-after: always; min-height: 257mm; display: flex; flex-direction: column;">
+                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">`;
+                    }
+                    
+                    // Add question
+                    pageHtml += `
+                        <div style="margin-bottom: 30px;">
+                            <p style="margin-bottom: 8px; font-weight: bold;"><strong>${questionNum}.</strong></p>
+                            <p style="margin-bottom: 5px;"><strong>English:</strong> ${q.english.replace(/\n/g, '<br>')}</p>
+                            <p style="margin-top: 8px; margin-bottom: 15px;"><strong>中文:</strong> ${q.chinese.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    `;
+                }
+                
+                // Close last page
+                pageHtml += '</div></div>';
+                
+                renderDiv.innerHTML = pageHtml;
+
+                // Wait for rendering
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Convert to PDF
+                const canvas = await html2canvas(renderDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                // Download PDF
+                const fileName = 'worksheet_' + new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_') + '.pdf';
+                pdf.save(fileName);
+
+                loading.style.display = 'none';
+                success.style.display = 'block';
+                success.textContent = `PDF 生成成功！已生成 ${data.questions.length} 個問題。下載已開始。`;
+
+            } catch (e) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = '生成 PDF 時發生錯誤：' + e.message;
+                console.error(e);
+            } finally {
+                generateBtn.disabled = false;
+            }
         }
     </script>
 </body>
