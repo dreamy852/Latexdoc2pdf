@@ -255,11 +255,15 @@ Q3C
                     currentQuestion = { num: qNum, english: '', chinese: '' };
                     currentKey = 'ENGLISH';
                 } else if (line.match(/^Q\d+C$/)) {
-                    currentKey = 'CHINESE';
+                    const qNum = parseInt(line.substring(1, line.length - 1));
+                    // Verify this matches the current question number
+                    if (currentQuestion && currentQuestion.num === qNum) {
+                        currentKey = 'CHINESE';
+                    }
                 } else if (currentKey === 'TITLE') {
-                    data.title = line;
+                    data.title = (data.title ? data.title + ' ' : '') + line;
                 } else if (currentKey === 'SUBJECT') {
-                    data.subject = line;
+                    data.subject = (data.subject ? data.subject + ' ' : '') + line;
                 } else if (currentKey === 'ENGLISH' && currentQuestion) {
                     currentQuestion.english = (currentQuestion.english ? currentQuestion.english + '\n' : '') + line;
                 } else if (currentKey === 'CHINESE' && currentQuestion) {
@@ -452,12 +456,17 @@ Q3C
                             <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">`;
                     }
                     
-                    // Add question
+                    // Add question (escape HTML to prevent injection)
+                    const escapeHtml = (text) => {
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML.replace(/\n/g, '<br>');
+                    };
                     pageHtml += `
                         <div style="margin-bottom: 30px;">
                             <p style="margin-bottom: 8px; font-weight: bold;"><strong>${questionNum}.</strong></p>
-                            <p style="margin-bottom: 5px;"><strong>English:</strong> ${q.english.replace(/\n/g, '<br>')}</p>
-                            <p style="margin-top: 8px; margin-bottom: 15px;"><strong>中文:</strong> ${q.chinese.replace(/\n/g, '<br>')}</p>
+                            <p style="margin-bottom: 5px;"><strong>English:</strong> ${escapeHtml(q.english)}</p>
+                            <p style="margin-top: 8px; margin-bottom: 15px;"><strong>中文:</strong> ${escapeHtml(q.chinese)}</p>
                         </div>
                     `;
                 }
