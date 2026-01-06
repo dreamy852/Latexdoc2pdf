@@ -238,6 +238,7 @@
                 .replace(/\\textbf\{(.*?)\}/g, '<strong>$1</strong>')
                 .replace(/\\textit\{(.*?)\}/g, '<em>$1</em>')
                 .replace(/\\emph\{(.*?)\}/g, '<em>$1</em>')
+                .replace(/\\tab/g, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;') // Convert \tab to multiple spaces
                 .replace(/\\\\/g, '<br>')
                 .replace(/\n\n/g, '</p><p>')
                 .replace(/\n/g, '<br>');
