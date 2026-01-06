@@ -475,9 +475,9 @@ Q3C
             return latex;
         }
 
-            let latex = `\\documentclass[12pt]{article}
-\\usepackage[top=1.5cm, bottom=1.5cm, left=2cm, right=2cm]{geometry}
-\\usepackage{graphicx}
+        async function generatePDF() {
+            const input = document.getElementById('question_input').value.trim();
+            const loading = document.getElementById('loading');
 \\usepackage{tabularx}
 \\usepackage{array}
 \\usepackage{multirow}
