@@ -477,11 +477,11 @@ Q3C
 
                 // Add spacing before questions
                 if (questionNum % 2 === 0) {
-                    // Even questions (Q2, Q4, Q6...): add vspace 6cm
-                    latex += '\\vspace{6cm}\n\n';
+                    // Even questions (Q2, Q4, Q6...): add vspace 20cm
+                    latex += '\\vspace{20cm}\n\n';
                 } else if (questionNum > 1) {
-                    // Odd questions except Q1 (Q3, Q5, Q7...): add 4 line breaks
-                    latex += '\\\\[0.2cm]\n\\\\[0.2cm]\n\\\\[0.2cm]\n\\\\[0.2cm]\n\n';
+                    // Odd questions except Q1 (Q3, Q5, Q7...): add 6cm line break
+                    latex += '\\\\[6cm]\n\n';
                 }
 
                 latex += `% Question ${questionNum}
