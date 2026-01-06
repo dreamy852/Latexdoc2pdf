@@ -261,25 +261,6 @@ Q3C
             <textarea id="question_input" placeholder="TITLE&#10;Worksheet Title&#10;SUBJECT&#10;Subject/Course Name&#10;Q1E&#10;Your English question 1&#10;Q1C&#10;您的中文問題 1&#10;Q2E&#10;Your English question 2&#10;Q2C&#10;您的中文問題 2&#10;..."></textarea>
         </div>
 
-        <div class="form-section">
-            <h3>2. 選擇 LaTeX 模板</h3>
-            <div class="template-selection">
-                <div class="template-option" onclick="selectTemplate(1)">
-                    <input type="radio" name="template" value="1" id="template1" checked>
-                    <label for="template1" style="cursor: pointer; display: block;">
-                        <h4>模板 1：標準格式</h4>
-                        <p>使用 worksheetquestion 環境，每頁 2 個問題，標準佈局</p>
-                    </label>
-                </div>
-                <div class="template-option" onclick="selectTemplate(2)">
-                    <input type="radio" name="template" value="2" id="template2">
-                    <label for="template2" style="cursor: pointer; display: block;">
-                        <h4>模板 2：緊湊格式</h4>
-                        <p>使用 question 命令，自動編號，更緊湊的佈局</p>
-                    </label>
-                </div>
-            </div>
-        </div>
 
         <div class="button-group">
             <button type="button" class="btn-primary" id="generateBtn" onclick="generatePDF()">生成 PDF</button>
@@ -300,12 +281,6 @@ Q3C
     <div id="pdf-render" style="position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6;"></div>
 
     <script>
-        function selectTemplate(num) {
-            document.querySelectorAll('.template-option').forEach(opt => opt.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
-            document.getElementById(`template${num}`).checked = true;
-        }
-
         function clearContent() {
             document.getElementById('question_input').value = '';
             document.getElementById('error').style.display = 'none';
@@ -500,7 +475,6 @@ Q3C
             return latex;
         }
 
-        function generateTemplate2(data) {
             let latex = `\\documentclass[12pt]{article}
 \\usepackage[top=1.5cm, bottom=1.5cm, left=2cm, right=2cm]{geometry}
 \\usepackage{graphicx}
@@ -595,7 +569,6 @@ Q3C
 
         async function generatePDF() {
             const input = document.getElementById('question_input').value.trim();
-            const templateNum = document.querySelector('input[name="template"]:checked').value;
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const success = document.getElementById('success');
@@ -621,13 +594,8 @@ Q3C
                     throw new Error('未找到有效的問題。請確認輸入格式：TITLE/SUBJECT/Q1E/Q1C/Q2E/Q2C...');
                 }
 
-                // Generate LaTeX code
-                let latexCode;
-                if (templateNum === '1') {
-                    latexCode = generateTemplate1(data);
-                } else {
-                    latexCode = generateTemplate2(data);
-                }
+                // Generate LaTeX code using template 1
+                let latexCode = generateTemplate1(data);
 
                 // Create HTML version for PDF rendering
                 const renderDiv = document.getElementById('pdf-render');
@@ -739,10 +707,6 @@ Q3C
             }
         }
 
-        // Initialize template selection
-        document.addEventListener('DOMContentLoaded', function() {
-            selectTemplate(1);
-        });
     </script>
 </body>
 </html>
