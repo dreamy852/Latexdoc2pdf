@@ -363,6 +363,24 @@ Q4C
                 // Set HTML content
                 renderDiv.innerHTML = htmlContent;
 
+                // Wait for all images to load
+                const images = renderDiv.querySelectorAll('img');
+                if (images.length > 0) {
+                    await Promise.all(
+                        Array.from(images).map(img => {
+                            if (img.complete) {
+                                return Promise.resolve();
+                            }
+                            return new Promise((resolve, reject) => {
+                                img.onload = resolve;
+                                img.onerror = resolve; // Continue even if image fails
+                                // Timeout after 3 seconds
+                                setTimeout(resolve, 3000);
+                            });
+                        })
+                    );
+                }
+
                 // Render math with KaTeX
                 if (typeof renderMathInElement !== 'undefined') {
                     renderMathInElement(renderDiv, {
@@ -376,8 +394,8 @@ Q4C
                     });
                 }
 
-                // Wait for math rendering and images/fonts to load
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // Wait for math rendering to complete
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Convert to PDF
                 const canvas = await html2canvas(renderDiv, {
