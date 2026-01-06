@@ -340,6 +340,10 @@ Q3C
                     currentKey = 'SUBJECT';
                 } else if (line.match(/^Q\d+E$/)) {
                     const qNum = parseInt(line.substring(1, line.length - 1));
+                    // If there's a previous question that hasn't been pushed, push it first
+                    if (currentQuestion && currentQuestion.english && currentQuestion.chinese) {
+                        data.questions.push(currentQuestion);
+                    }
                     currentQuestion = { num: qNum, english: '', chinese: '' };
                     currentKey = 'ENGLISH';
                 } else if (line.match(/^Q\d+C$/)) {
@@ -356,9 +360,10 @@ Q3C
                     currentQuestion.english = (currentQuestion.english ? currentQuestion.english + '\n' : '') + line;
                 } else if (currentKey === 'CHINESE' && currentQuestion) {
                     currentQuestion.chinese = (currentQuestion.chinese ? currentQuestion.chinese + '\n' : '') + line;
-                    // After a Chinese question, if the next line is not a new question key, push the current question
+                    // After a Chinese question line, check if next line is a new question key or end of input
                     const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
-                    if (!nextLine.match(/^(TITLE|SUBJECT|Q\d+[EC])$/)) {
+                    if (nextLine.match(/^(TITLE|SUBJECT|Q\d+[EC])$/) || i === lines.length - 1) {
+                        // Next line is a new key or this is the last line, so push current question
                         data.questions.push(currentQuestion);
                         currentQuestion = null;
                         currentKey = null;
