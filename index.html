@@ -196,35 +196,48 @@
         <p class="subtitle">Convert HTML content to PDF in your browser</p>
 
         <div class="form-section">
-            <label for="html_input">Enter your HTML code:</label>
-            <div class="example">Example:
-&lt;h1&gt;Hello, World!&lt;/h1&gt;
-&lt;p&gt;This is a sample HTML document.&lt;/p&gt;
-&lt;ul&gt;
-    &lt;li&gt;Item 1&lt;/li&gt;
-    &lt;li&gt;Item 2&lt;/li&gt;
-    &lt;li&gt;Item 3&lt;/li&gt;
-&lt;/ul&gt;</div>
-            <textarea id="html_input" placeholder="Enter your HTML code here..."><h1>Hello, World!</h1>
-<p>This is a sample HTML document that will be converted to PDF.</p>
-
-<h2>Math Equations</h2>
-<p>Inline math: $E = mc^2$ and $x^2 + y^2 = r^2$</p>
-
-<p>Display equation:</p>
-<p>$$\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$</p>
-
-<p>Another equation:</p>
-<p>\[
-\sum_{i=1}^{n} i = \frac{n(n+1)}{2}
-\]</p>
-
-<p>You can use LaTeX math syntax: $x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$</p></textarea>
+            <label for="html_input">Enter worksheet content:</label>
+            <div class="example">Format:
+TITLE
+Your Worksheet Title
+Q1E
+What is 1+1?
+Q1C
+1+1等於什麼?
+Q2E
+What is 2+2?
+Q2C
+2+2等於什麼?
+Q3E
+What is 3+3?
+Q3C
+3+3等於什麼?
+Q4E
+What is 4+4?
+Q4C
+4+4等於什麼?</div>
+            <textarea id="html_input" placeholder="Enter worksheet content...">TITLE
+Math Worksheet
+Q1E
+What is 1+1?
+Q1C
+1+1等於什麼?
+Q2E
+What is 2+2?
+Q2C
+2+2等於什麼?
+Q3E
+What is 3+3?
+Q3C
+3+3等於什麼?
+Q4E
+What is 4+4?
+Q4C
+4+4等於什麼?</textarea>
         </div>
 
         <div class="button-group">
             <button type="button" class="btn-primary" id="generateBtn" onclick="generatePDF()">Generate PDF</button>
-            <button type="button" class="btn-secondary" onclick="previewHTML()">Preview HTML</button>
             <button type="button" class="btn-secondary" onclick="clearContent()">Clear</button>
         </div>
 
@@ -232,10 +245,6 @@
         <div class="error" id="error"></div>
         <div class="success" id="success"></div>
 
-        <div class="preview-section" id="previewSection" style="display: none;">
-            <h3>HTML Preview:</h3>
-            <div id="html-preview"></div>
-        </div>
     </div>
 
     <!-- Hidden container for PDF rendering -->
@@ -246,35 +255,74 @@
             document.getElementById('html_input').value = '';
             document.getElementById('error').style.display = 'none';
             document.getElementById('success').style.display = 'none';
-            document.getElementById('previewSection').style.display = 'none';
         }
 
-        function previewHTML() {
-            const input = document.getElementById('html_input').value.trim();
-            const previewSection = document.getElementById('previewSection');
-            const previewDiv = document.getElementById('html-preview');
-
-            if (!input) {
-                alert('Please enter HTML code first');
-                return;
+        async function loadTemplate() {
+            try {
+                const response = await fetch('test.html');
+                if (!response.ok) {
+                    throw new Error('Failed to load template');
+                }
+                return await response.text();
+            } catch (error) {
+                console.error('Error loading template:', error);
+                throw error;
             }
+        }
 
-            previewDiv.innerHTML = input;
+        function parseInput(input) {
+            const lines = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const data = {
+                title: '',
+                questions: {}
+            };
             
-            // Render math with KaTeX in preview
-            if (typeof renderMathInElement !== 'undefined') {
-                renderMathInElement(previewDiv, {
-                    delimiters: [
-                        {left: '$$', right: '$$', display: true},
-                        {left: '\\[', right: '\\]', display: true},
-                        {left: '$', right: '$', display: false},
-                        {left: '\\(', right: '\\)', display: false}
-                    ],
-                    throwOnError: false
-                });
+            let currentKey = null;
+            let currentQuestionNum = null;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                if (line === 'TITLE') {
+                    currentKey = 'TITLE';
+                    currentQuestionNum = null;
+                } else if (line.match(/^Q\d+E$/)) {
+                    currentQuestionNum = parseInt(line.substring(1, line.length - 1));
+                    currentKey = 'ENGLISH';
+                    if (!data.questions[currentQuestionNum]) {
+                        data.questions[currentQuestionNum] = { english: '', chinese: '' };
+                    }
+                } else if (line.match(/^Q\d+C$/)) {
+                    const qNum = parseInt(line.substring(1, line.length - 1));
+                    if (qNum === currentQuestionNum) {
+                        currentKey = 'CHINESE';
+                    }
+                } else if (currentKey === 'TITLE') {
+                    data.title = (data.title ? data.title + ' ' : '') + line;
+                } else if (currentKey === 'ENGLISH' && currentQuestionNum) {
+                    data.questions[currentQuestionNum].english = (data.questions[currentQuestionNum].english ? data.questions[currentQuestionNum].english + ' ' : '') + line;
+                } else if (currentKey === 'CHINESE' && currentQuestionNum) {
+                    data.questions[currentQuestionNum].chinese = (data.questions[currentQuestionNum].chinese ? data.questions[currentQuestionNum].chinese + ' ' : '') + line;
+                }
             }
             
-            previewSection.style.display = 'block';
+            return data;
+        }
+
+        function replaceTemplate(template, data) {
+            let html = template;
+            
+            // Replace title
+            html = html.replace(/#####TITLE#####/g, data.title || '');
+            
+            // Replace questions
+            for (let qNum = 1; qNum <= 4; qNum++) {
+                const q = data.questions[qNum] || { english: '', chinese: '' };
+                html = html.replace(new RegExp(`#####Q${qNum}E#####`, 'g'), q.english || '');
+                html = html.replace(new RegExp(`#####Q${qNum}C#####`, 'g'), q.chinese || '');
+            }
+            
+            return html;
         }
 
         async function generatePDF() {
@@ -286,7 +334,7 @@
 
             if (!input) {
                 error.style.display = 'block';
-                error.textContent = 'Please enter HTML code';
+                error.textContent = 'Please enter worksheet content';
                 return;
             }
 
@@ -297,14 +345,23 @@
             generateBtn.disabled = true;
 
             try {
+                // Parse user input
+                const data = parseInput(input);
+                
+                // Load template
+                const template = await loadTemplate();
+                
+                // Replace placeholders in template
+                const htmlContent = replaceTemplate(template, data);
+
                 // Create HTML version for PDF rendering
                 const renderDiv = document.getElementById('pdf-render');
                 renderDiv.innerHTML = '';
                 renderDiv.removeAttribute('style');
                 renderDiv.style.cssText = 'position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6;';
                 
-                // Set HTML content directly
-                renderDiv.innerHTML = input;
+                // Set HTML content
+                renderDiv.innerHTML = htmlContent;
 
                 // Render math with KaTeX
                 if (typeof renderMathInElement !== 'undefined') {

@@ -1,0 +1,133 @@
+<div class="math-worksheet">
+    <div class="header">
+      <div class="header-left">
+        <div class="logo-placeholder"><img src="logo.pdf" /></div>
+      </div>
+      <div class="header-right">
+        <p>Name: <span class="underline">_______________</span></p>
+        <p>Class: <span class="underline">_______________</span></p>
+        <p>Worksheet title: <span id="worksheet_title">#####TITLE#####</span></p>
+      </div>
+    </div>
+    
+    <hr class="divider">
+    
+    <table class="questions-table">
+      <tr class="first-rows">
+        <td class="question-number">1.</td>
+        <td class="question-content">#####Q1E#####<br/>#####Q1C#####</td>
+      </tr>
+      <tr class="first-rows">
+        <td class="question-number">2.</td>
+        <td class="question-content">#####Q2E#####<br/>#####Q2C#####</td>
+      </tr>
+      <tr class="other-rows">
+        <td class="question-number" height="14.9cm">3.</td>
+        <td class="question-content">#####Q3E#####<br/>#####Q3C#####</td>
+      </tr>
+      <tr class="fourth-row">
+        <td class="question-number">4.</td>
+        <td class="question-content">#####Q4E#####<br/>#####Q4C#####</td>
+      </tr>
+    </table>
+  </div>
+  
+  <style>
+    :root {
+      --first-row-height: 12.6cm;
+      --other-row-height: 14.9cm;
+      --fourth-row-height: 8cm;
+    }
+    
+    .math-worksheet {
+      font-family: 'Times New Roman', serif;
+      max-width: 800px;
+      margin: 20px;
+      padding: 25px;
+      border: 1px solid white;
+      background-color: #fff;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    
+    .header-left {
+      width: 30%;
+    }
+    
+    .logo-placeholder {
+      width: 100px;
+      height: 100px;
+      border: 1px dashed #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f5f5f5;
+      font-style: italic;
+    }
+    
+    .header-right {
+      width: 65%;
+      font-size: 16px;
+      line-height: 1.8;
+    }
+    
+    .underline {
+      display: inline-block;
+      min-width: 150px;
+    }
+    
+    #worksheet_title {
+      font-weight: bold;
+    }
+    
+    .divider {
+      border: none;
+      border-top: 2px solid white;
+      margin: 20px 0;
+    }
+    
+    .questions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    
+    .questions-table tr {
+      border-bottom: 1px solid white;
+    }
+    
+    .questions-table tr:nth-child(even) {
+      background-color: #FFFFFF;
+    }
+    
+    .first-rows {
+      height: var(--first-row-height);
+      vertical-align: top;
+    }
+  
+    .other-rows {
+      height: var(--other-row-height);
+      vertical-align: top;
+    }
+    .fourth-row {
+      height: var(--fourth-row-height);
+      vertical-align: top;
+    }    
+    .question-number {
+      width: 30px;
+      padding: 8px 5px;
+      font-weight: bold;
+      vertical-align: top;
+    }
+    
+    .question-content {
+      padding: 8px 15px;
+      font-size: 18px;
+      vertical-align: top;
+    }
+  </style>
