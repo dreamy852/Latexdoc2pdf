@@ -1,10 +1,11 @@
-# LaTeX to PDF Converter
+# HTML to PDF Converter
 
-A simple web application that converts LaTeX documents to PDF in your browser.
+A simple web application that converts HTML content to PDF in your browser.
 
 ## Features
 
-- 📝 Enter LaTeX code in the textarea
+- 📝 Enter HTML code in the textarea
+- 👁️ Preview HTML before converting
 - 📄 Generate PDF instantly
 - 🎨 Clean, modern UI
 - ⚡ Works entirely in the browser (no server needed)
@@ -12,9 +13,10 @@ A simple web application that converts LaTeX documents to PDF in your browser.
 
 ## Usage
 
-1. Enter your LaTeX code in the textarea
-2. Click "Generate PDF"
-3. The PDF will be downloaded automatically
+1. Enter your HTML code in the textarea
+2. (Optional) Click "Preview HTML" to see how it looks
+3. Click "Generate PDF"
+4. The PDF will be downloaded automatically
 
 ## Deployment
 
@@ -27,26 +29,27 @@ A simple web application that converts LaTeX documents to PDF in your browser.
 
 The app will work as a static site on Cloudflare Pages.
 
-## Example LaTeX
+## Example HTML
 
-```latex
-\documentclass{article}
-\begin{document}
-Hello, World!
-
-This is a LaTeX document.
-
-Math: $E = mc^2$
-
-Equation:
-\[
-\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
-\]
-\end{document}
+```html
+<h1>Hello, World!</h1>
+<p>This is a sample HTML document.</p>
+<ul>
+    <li>Item 1</li>
+    <li>Item 2</li>
+    <li>Item 3</li>
+</ul>
 ```
+
+## How It Works
+
+1. HTML code is directly inserted into a hidden div element
+2. html2canvas converts the HTML element to a canvas (image)
+3. jsPDF converts the canvas image to a PDF file
+4. The PDF is automatically downloaded
 
 ## Limitations
 
-- This is a browser-based converter, so it converts LaTeX to HTML first, then to PDF
-- Complex LaTeX features may not be fully supported
-- For full LaTeX support, use a proper LaTeX compiler
+- Complex CSS may not render perfectly
+- External resources (images, fonts) must be accessible via CORS
+- Some CSS features may not be fully supported

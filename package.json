@@ -1,13 +1,13 @@
 {
-  "name": "latex-to-pdf",
+  "name": "html-to-pdf",
   "version": "1.0.0",
-  "description": "LaTeX to PDF converter",
+  "description": "HTML to PDF converter",
   "main": "index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "latex",
+    "html",
     "pdf",
     "converter"
   ],

@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX to PDF Converter</title>
+    <title>HTML to PDF Converter</title>
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- html2canvas for HTML to canvas conversion -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- KaTeX for math rendering -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -166,50 +162,72 @@
             font-size: 0.9em;
             white-space: pre-wrap;
         }
+
+        .preview-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .preview-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        #html-preview {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            overflow: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📄 LaTeX to PDF Converter</h1>
-        <p class="subtitle">Convert LaTeX documents to PDF in your browser</p>
+        <h1>🌐 HTML to PDF Converter</h1>
+        <p class="subtitle">Convert HTML content to PDF in your browser</p>
 
         <div class="form-section">
-            <label for="latex_input">Enter your LaTeX code:</label>
+            <label for="html_input">Enter your HTML code:</label>
             <div class="example">Example:
-\documentclass{article}
-\begin{document}
-1. \tab What is 1+1?
-    \tab 1+1等於什麼?
+&lt;h1&gt;Hello, World!&lt;/h1&gt;
+&lt;p&gt;This is a sample HTML document.&lt;/p&gt;
+&lt;ul&gt;
+    &lt;li&gt;Item 1&lt;/li&gt;
+    &lt;li&gt;Item 2&lt;/li&gt;
+    &lt;li&gt;Item 3&lt;/li&gt;
+&lt;/ul&gt;</div>
+            <textarea id="html_input" placeholder="Enter your HTML code here..."><h1>Hello, World!</h1>
+<p>This is a sample HTML document that will be converted to PDF.</p>
 
-2. \tab What is 2+2?
-    \tab 2+2等於什麼?
+<h2>Features</h2>
+<ul>
+    <li>Convert HTML to PDF</li>
+    <li>Works in your browser</li>
+    <li>No server required</li>
+</ul>
 
-3. \tab What is 3+3?
-    \tab 3+3等於什麼?
-\end{document}</div>
-            <textarea id="latex_input" placeholder="Enter your LaTeX code here...">\documentclass{article}
-\begin{document}
-
-1. \tab What is 1+1?
-    \tab 1+1等於什麼?
-
-2. \tab What is 2+2?
-    \tab 2+2等於什麼?
-
-3. \tab What is 3+3?
-    \tab 3+3等於什麼?
-
-\end{document}</textarea>
+<p>You can style your content with HTML and CSS!</p></textarea>
         </div>
 
         <div class="button-group">
             <button type="button" class="btn-primary" id="generateBtn" onclick="generatePDF()">Generate PDF</button>
+            <button type="button" class="btn-secondary" onclick="previewHTML()">Preview HTML</button>
             <button type="button" class="btn-secondary" onclick="clearContent()">Clear</button>
         </div>
 
         <div class="loading" id="loading">Generating PDF, please wait...</div>
         <div class="error" id="error"></div>
         <div class="success" id="success"></div>
+
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <h3>HTML Preview:</h3>
+            <div id="html-preview"></div>
+        </div>
     </div>
 
     <!-- Hidden container for PDF rendering -->
@@ -217,40 +235,28 @@
 
     <script>
         function clearContent() {
-            document.getElementById('latex_input').value = '';
+            document.getElementById('html_input').value = '';
             document.getElementById('error').style.display = 'none';
             document.getElementById('success').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'none';
         }
 
-        function parseLatex(latexCode) {
-            // Extract content between \begin{document} and \end{document}
-            const docMatch = latexCode.match(/\\begin\{document\}([\s\S]*)\\end\{document\}/);
-            if (!docMatch) {
-                throw new Error('LaTeX document must contain \\begin{document} and \\end{document}');
+        function previewHTML() {
+            const input = document.getElementById('html_input').value.trim();
+            const previewSection = document.getElementById('previewSection');
+            const previewDiv = document.getElementById('html-preview');
+
+            if (!input) {
+                alert('Please enter HTML code first');
+                return;
             }
 
-            let content = docMatch[1].trim();
-            
-            // Convert LaTeX commands to HTML
-            content = content
-                .replace(/\\section\*?\{(.*?)\}/g, '<h1>$1</h1>')
-                .replace(/\\subsection\*?\{(.*?)\}/g, '<h2>$1</h2>')
-                .replace(/\\textbf\{(.*?)\}/g, '<strong>$1</strong>')
-                .replace(/\\textit\{(.*?)\}/g, '<em>$1</em>')
-                .replace(/\\emph\{(.*?)\}/g, '<em>$1</em>')
-                .replace(/\\tab/g, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;') // Convert \tab to multiple spaces
-                .replace(/\\\\/g, '<br>')
-                .replace(/\n\n/g, '</p><p>')
-                .replace(/\n/g, '<br>');
-
-            // Wrap in paragraph tags
-            content = '<p>' + content + '</p>';
-            
-            return content;
+            previewDiv.innerHTML = input;
+            previewSection.style.display = 'block';
         }
 
         async function generatePDF() {
-            const input = document.getElementById('latex_input').value.trim();
+            const input = document.getElementById('html_input').value.trim();
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const success = document.getElementById('success');
@@ -258,7 +264,7 @@
 
             if (!input) {
                 error.style.display = 'block';
-                error.textContent = 'Please enter LaTeX code';
+                error.textContent = 'Please enter HTML code';
                 return;
             }
 
@@ -269,37 +275,24 @@
             generateBtn.disabled = true;
 
             try {
-                // Parse LaTeX and create HTML
-                const htmlContent = parseLatex(input);
-
                 // Create HTML version for PDF rendering
                 const renderDiv = document.getElementById('pdf-render');
                 renderDiv.innerHTML = '';
+                renderDiv.removeAttribute('style');
                 renderDiv.style.cssText = 'position: absolute; left: -9999px; width: 210mm; min-height: 297mm; padding: 20mm; background: white; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6;';
                 
-                // Create HTML content
-                renderDiv.innerHTML = htmlContent;
+                // Set HTML content directly
+                renderDiv.innerHTML = input;
 
-                // Render math with KaTeX
-                if (typeof renderMathInElement !== 'undefined') {
-                    renderMathInElement(renderDiv, {
-                        delimiters: [
-                            {left: '$$', right: '$$', display: true},
-                            {left: '\\[', right: '\\]', display: true},
-                            {left: '$', right: '$', display: false},
-                            {left: '\\(', right: '\\)', display: false}
-                        ]
-                    });
-                }
-
-                // Wait for math rendering
+                // Wait for images and fonts to load
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Convert to PDF
                 const canvas = await html2canvas(renderDiv, {
                     scale: 2,
                     useCORS: true,
-                    logging: false
+                    logging: false,
+                    backgroundColor: '#ffffff'
                 });
 
                 const imgData = canvas.toDataURL('image/png');
