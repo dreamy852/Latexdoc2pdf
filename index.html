@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML to PDF Converter</title>
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- html2canvas for HTML to canvas conversion -->
@@ -284,8 +288,21 @@
                 // Set HTML content directly
                 renderDiv.innerHTML = input;
 
-                // Wait for images and fonts to load
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Render math with KaTeX
+                if (typeof renderMathInElement !== 'undefined') {
+                    renderMathInElement(renderDiv, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false}
+                        ],
+                        throwOnError: false
+                    });
+                }
+
+                // Wait for math rendering and images/fonts to load
+                await new Promise(resolve => setTimeout(resolve, 800));
 
                 // Convert to PDF
                 const canvas = await html2canvas(renderDiv, {
