@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX 轉 PDF</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .example-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .example-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .example-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .example-button:hover {
+            background: #5568d3;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error {
+            display: none;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .success {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 LaTeX 轉 PDF</h1>
+        <p class="subtitle">輸入 LaTeX 文檔，自動生成 PDF 文件</p>
+
+        <div class="example-section">
+            <h3>快速範例</h3>
+            <p>點擊下方按鈕載入範例 LaTeX 文檔：</p>
+            <button class="example-button" onclick="loadExample('basic')">基本文檔</button>
+            <button class="example-button" onclick="loadExample('math')">數學公式</button>
+            <button class="example-button" onclick="loadExample('article')">完整文章</button>
+        </div>
+
+        <form id="latexForm" action="/convert" method="POST">
+            <div class="form-group">
+                <label for="latex_content">LaTeX 內容：</label>
+                <textarea id="latex_content" name="latex_content" required></textarea>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn-primary">生成 PDF</button>
+                <button type="button" class="btn-secondary" onclick="clearContent()">清除內容</button>
+            </div>
+        </form>
+
+        <div class="loading" id="loading">正在編譯 LaTeX，請稍候...</div>
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+    </div>
+
+    <script>
+        const examples = {
+            basic: `\\documentclass{article}
+\\begin{document}
+\\title{我的第一個 LaTeX 文檔}
+\\author{您的名字}
+\\date{\\today}
+\\maketitle
+
+\\section{簡介}
+這是我的第一個 LaTeX 文檔！
+
+\\section{內容}
+LaTeX 是一個強大的文檔準備系統。
+\\end{document}`,
+
+            math: `\\documentclass{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage{amsmath}
+
+\\begin{document}
+\\title{數學公式範例}
+\\maketitle
+
+\\section{行內公式}
+這是行內公式：$E = mc^2$
+
+\\section{區塊公式}
+這是區塊公式：
+\\[
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+\\]
+
+\\section{多行公式}
+\\begin{align}
+f(x) &= x^2 + 2x + 1 \\\\
+     &= (x + 1)^2
+\\end{align}
+\\end{document}`,
+
+            article: `\\documentclass[12pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage{amsmath,amsfonts,amssymb}
+\\usepackage{graphicx}
+
+\\title{LaTeX 文檔範例}
+\\author{作者姓名}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\tableofcontents
+\\newpage
+
+\\section{引言}
+這是一個完整的 LaTeX 文檔範例，展示了各種功能和格式。
+
+\\subsection{子節}
+這是子節的內容。
+
+\\section{列表}
+\\begin{itemize}
+    \\item 項目一
+    \\item 項目二
+    \\item 項目三
+\\end{itemize}
+
+\\section{編號列表}
+\\begin{enumerate}
+    \\item 第一項
+    \\item 第二項
+    \\item 第三項
+\\end{enumerate}
+
+\\section{結論}
+這是一個簡單的結論段落。
+\\end{document}`
+        };
+
+        function loadExample(type) {
+            document.getElementById('latex_content').value = examples[type] || '';
+        }
+
+        function clearContent() {
+            document.getElementById('latex_content').value = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        document.getElementById('latexForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            
+            // 隱藏之前的訊息
+            error.style.display = 'none';
+            success.style.display = 'none';
+            loading.style.display = 'block';
+            
+            fetch('/convert', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                loading.style.display = 'none';
+                
+                if (response.ok) {
+                    return response.blob().then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = 'document.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        
+                        success.style.display = 'block';
+                        success.textContent = 'PDF 生成成功！下載已開始。';
+                    });
+                } else {
+                    return response.json().then(data => {
+                        error.style.display = 'block';
+                        error.innerHTML = `<strong>錯誤：</strong>${data.error || '發生未知錯誤'}`;
+                        if (data.details) {
+                            error.innerHTML += `<pre>${data.details}</pre>`;
+                        }
+                    });
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = '發生錯誤：' + err.message;
+            });
+        });
+    </script>
+</body>
+</html>
+
